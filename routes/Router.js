@@ -10,11 +10,8 @@ class Router {
         let result = await callback();
         res.json(result);
       } catch (error) {
-        console.log(error)
-        res.json({
-          success: 0,
-          error: error,
-        });
+        console.error(error);
+        res.json(error);
       }
     });
   }
@@ -23,15 +20,12 @@ class Router {
     this.app.post("/api" + route, async (request, res) => {
       try {
 
-        let result = await callback(request.body);
+        let result = await callback(request.query);
 
         res.json(result);
       } catch (error) {
         console.error(error);
-        res.json({
-          success: 0,
-          error: error
-        });
+        res.json(error);
       }
     });
   }
@@ -40,15 +34,12 @@ class Router {
     this.app.post("/api" + route, async (request, res) => {
       try {
 
-        let result = await callback(request.body);
+        let result = await callback(request.query);
 
         res.json(result);
       } catch (error) {
         console.error(error);
-        res.json({
-          success: 0,
-          error: error
-        });
+        res.json(error);
       }
     });
   }
@@ -57,15 +48,12 @@ class Router {
     this.app.post("/api" + route, async (request, res) => {
       try {
 
-        let result = await callback(request.body);
+        let result = await callback(request.query);
 
         res.json(result);
       } catch (error) {
         console.error(error);
-        res.json({
-          success: 0,
-          error: error
-        });
+        res.json(error);
       }
     });
   }

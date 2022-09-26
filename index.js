@@ -1,8 +1,13 @@
-//NodeJS Modules
-const http = require('http');
-const app = require('express');
+/**
+ * NodeJS Modules
+ */
+const express = require('express');
+const cors = require('cors');
 
-//Express Settings
+/**
+ * Express Settigns
+ */
+const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('build'));
@@ -11,21 +16,26 @@ app.use(express.urlencoded({
 }));
 app.options('*', cors());
 
-//Server Configs
+/**
+ * Server Configs
+ */
 const config = require('./config');
 
-//Initialize API
+/**
+ * Initialize API
+ */
 const initApi = require('./routes/api');
 
-//Create server
-const server = http.createServer(function (req, res) {
-
-});
-
-//Listen to any request
-server.listen(config.server.port, () => {
+/**
+ * Listen to Any Request
+ */
+app.listen(config.server.port, () => {
   console.log(`Server is running on port ${config.server.url}:${config.server.port}...`);
 });
+
+app.get("/", (req, res) => {
+  res.send("Hello World");
+})
 
 initApi(app);
 

@@ -1,10 +1,11 @@
 /**
+ * 
  * @author: Emerson Dalwampo <dalwampoemersons@gmail.com>
  * Date: 09.25.22
  *
  */
 
-import db from "../connection";
+const db = require("../connection");
 
 class QueryBuilder {
   constructor(methodName) {
@@ -185,30 +186,9 @@ class QueryBuilder {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 QueryBuilder.prototype.and = QueryBuilder.prototype.where;
 
 
+module.exports = QueryBuilder;
 
-export default QueryBuilder;
+
