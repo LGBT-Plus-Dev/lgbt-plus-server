@@ -7,7 +7,7 @@ class Router {
   get (route, callback) {
     this.app.get("/api" + route, async (request, res) => {
       try {
-        let result = await callback();
+        let result = await callback(request);
         res.json(result);
       } catch (error) {
         console.error(error);
@@ -20,7 +20,7 @@ class Router {
     this.app.post("/api" + route, async (request, res) => {
       try {
 
-        let result = await callback(request.query);
+        let result = await callback(request);
 
         res.json(result);
       } catch (error) {
@@ -31,10 +31,10 @@ class Router {
   }
 
   put (route, callback) {
-    this.app.post("/api" + route, async (request, res) => {
+    this.app.put("/api" + route, async (request, res) => {
       try {
 
-        let result = await callback(request.query);
+        let result = await callback(request);
 
         res.json(result);
       } catch (error) {
@@ -45,10 +45,10 @@ class Router {
   }
 
   delete (route, callback) {
-    this.app.post("/api" + route, async (request, res) => {
+    this.app.delete("/api" + route, async (request, res) => {
       try {
 
-        let result = await callback(request.query);
+        let result = await callback(request);
 
         res.json(result);
       } catch (error) {

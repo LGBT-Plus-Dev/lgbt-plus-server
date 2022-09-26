@@ -3,15 +3,11 @@ const Controller = require("./Controller");
 module.exports = class AdminController extends Controller {
 
   constructor() {
-    super('users');
-  }
 
-  getAllUsers = async () => {
-    let res = await this.qb.select().call();
-    for(let item of res) {
-      delete item['password'];
-    }
-    return res;
+    var table = 'users';
+    var hidden = ['passwords'];
+
+    super(table, hidden);
   }
 
   authenticate = async (req) => {
@@ -19,10 +15,7 @@ module.exports = class AdminController extends Controller {
       username: req.username,
       password: req.password
     }).first();
-
-    if(res)
-      delete res['password'];
-
+    res = this._hideColumns(res);
     return res;
   }
 

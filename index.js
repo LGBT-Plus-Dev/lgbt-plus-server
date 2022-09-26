@@ -37,5 +37,16 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 })
 
+// app.get("/api/admin/:adminId", (req, res) => {
+//   res.json({
+//     req: {
+//       params: req.params,
+//       body: req.body,
+//       query: req.query,
+//       url: req.url
+//     }
+//   });
+// })
+
 initApi(app);
 
