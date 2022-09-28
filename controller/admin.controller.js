@@ -5,16 +5,17 @@ module.exports = class AdminController extends Controller {
   constructor() {
 
     var table = 'users';
-    var hidden = ['passwords'];
+    var hidden = ['password'];
 
     super(table, hidden);
   }
 
   authenticate = async (req) => {
     let res = await this.qb.select().where({
-      username: req.username,
-      password: req.password
+      username: req.query.username,
+      password: req.query.password
     }).first();
+
     res = this._hideColumns(res);
     return res;
   }

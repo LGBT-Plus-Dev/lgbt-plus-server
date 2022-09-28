@@ -5,10 +5,12 @@ const Router = require("./Router");
 const AdminController = require('../controller/admin.controller');
 const SpecialistController = require('../controller/specialist.controller');
 const ServiceController = require("../controller/service.controller");
+const ClientController = require("../controller/client.controller");
 
 //Initialization
 const admin = new AdminController();
 const specialist = new SpecialistController();
+const client = new ClientController();
 const service = new ServiceController();
 
 module.exports = initApi = (app) => {
@@ -28,6 +30,14 @@ module.exports = initApi = (app) => {
   router.post("/specialist", specialist.save);
   router.post("/specialist/:id", specialist.save);
   router.delete("/specialist/:id", specialist.deleteById);
+
+  router.get("/client/all", client.getList);
+  router.get("/client/active", client.getActive);
+  router.get("/client/:id", client.getById);
+  router.post("/client/authenticate", client.authenticate);
+  router.post("/client", client.save);
+  router.post("/client/:id", client.save);
+  router.delete("/client/:id", client.deleteById);
 
   router.get("/service/all", service.getList);
   router.get("/service/:id", service.getById);

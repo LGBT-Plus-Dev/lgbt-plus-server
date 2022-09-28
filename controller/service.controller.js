@@ -1,6 +1,6 @@
 const Controller = require("./Controller");
-const ServicePriceController = require("./service_price.controller");
-
+const ServiceCategoryController = require("./service_category.controller");
+const SpecialtyController = require("./specialist_service.controller");
 module.exports = class ServiceController extends Controller {
 
   
@@ -11,7 +11,8 @@ module.exports = class ServiceController extends Controller {
 
     super(table, hidden);
 
-    this.priceController = new ServicePriceController();
+    this.categoryController = new ServiceCategoryController();
+    this.specialtyController = new SpecialtyController();
   }
 
   /**
@@ -20,9 +21,9 @@ module.exports = class ServiceController extends Controller {
   getList = async () => {
     let res = await this.qb.select().where().call();
     
-    //Get Prices
+    //Get Categories
     for(let item of res) {
-      item.prices = await this.priceController.getPricesByServiceId(item.id);
+      item.categories = await this.categoryController.getCategoriesByServiceId(item.id);
     }
 
     return res;
@@ -40,8 +41,8 @@ module.exports = class ServiceController extends Controller {
     if(res) {
       res = this._hideColumns(res);
 
-      //Get Prices
-      res.prices = await this.priceController.getPricesByServiceId(res.id);
+      //Get Categories
+      res.categories = await this.categoryController.getCategoriesByServiceId(res.id);
 
       return res;
     }
@@ -72,13 +73,13 @@ module.exports = class ServiceController extends Controller {
     if(serviceId === undefined) {
       
       let query = req.body.service;
-      let prices = query.prices;
-      delete query['prices'];
+      let categories = query.categories;
+      delete query['categories'];
       let res = await this._add(query);
 
-      if(prices) {
-        let collection = await this.priceController.create(prices, res.id);
-        res.prices = collection;
+      if(categories) {
+        let collection = await this.categoryController.create(categories, res.id);
+        res.categories = collection;
       }
       
       return res;
@@ -94,12 +95,12 @@ module.exports = class ServiceController extends Controller {
       }
       else {
         let query = req.body.service;
-        let prices = query.prices;
-        delete query['prices'];
+        let categories = query.categories;
+        delete query['categories'];
 
-        if(prices) {
-          await this.priceController.deleteByServiceId(serviceId);
-          await this.priceController.create(prices, serviceId);
+        if(categories) {
+          await this.categoryController.deleteByServiceId(serviceId);
+          await this.categoryController.create(categories, serviceId);
         }
         
         return await this._updateById(serviceId, query);
@@ -118,7 +119,8 @@ module.exports = class ServiceController extends Controller {
       }
     }
     else {
-      await this.priceController.deleteByServiceId(serviceId);
+      await this.categoryController.deleteByServiceId(serviceId);
+      await this.specialtyController.deleteByServiceId(serviceId);
       return await this._deleteById(serviceId);
     }
   }

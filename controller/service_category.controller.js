@@ -1,37 +1,34 @@
 const Controller = require("./Controller");
 
-module.exports = class ServicePriceController extends Controller {
+module.exports = class ServiceCategoryController extends Controller {
 
   
   constructor() {
 
-    var table = 'service_prices';
+    var table = 'service_categories';
     var hidden = [];
 
     super(table, hidden);
   }
 
-  getPricesByServiceId = async(serviceId) => {
+  getCategoriesByServiceId = async(serviceId) => {
     let res = await this.qb.select().where({
       service: serviceId
+    }).order({
+      price: 1
     }).call();
-    return res;
-  }
-
-  getById = async(priceId) => {
-    let res = await this._getById(priceId);
     return res;
   }
 
   /**
    * Create
    */
-  create = async (prices, serviceId) => {
+  create = async (categories, serviceId) => {
     let collections = [];
 
-    for(let price of prices) {
-      price.service = serviceId;
-      let res = await this._add(price);
+    for(let category of categories) {
+      category.service = serviceId;
+      let res = await this._add(category);
       collections = [...collections, res];
     }
 

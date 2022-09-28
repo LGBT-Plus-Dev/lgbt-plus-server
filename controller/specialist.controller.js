@@ -1,4 +1,5 @@
 const Controller = require("./Controller");
+const SpecialtyController = require("./specialist_service.controller");
 
 module.exports = class SpecialistController extends Controller {
 
@@ -9,6 +10,44 @@ module.exports = class SpecialistController extends Controller {
     var hidden = ['password'];
 
     super(table, hidden);
+
+    this.specialtyController = new SpecialtyController();
+  }
+
+  /**
+   * override
+  */
+  getList = async () => {
+    let res = await this.qb.select().where().call();
+    
+    //Get Services
+    for(let item of res) {
+      item.services = await this.specialtyController.getSpecialistServices(item.id);
+    }
+
+    return res;
+  }
+
+  /**
+   * override
+   */
+  _getById = async (id) => {
+    
+    let res = await this.qb.select().where({
+      id: id
+    }).first();
+
+    if(res) {
+      res = this._hideColumns(res);
+
+      //Get Services
+      res.services = await this.specialtyController.getSpecialistServices(res.id);
+
+      return res;
+    }
+    else{
+      return null;
+    }
   }
 
   /**
@@ -55,7 +94,15 @@ module.exports = class SpecialistController extends Controller {
 
     //Create
     if(specialistId === undefined) {
-      return await this._add(req.body.specialist);
+      let query = req.body.specialist;
+      let services = query.services;
+      delete query['services'];
+      let res = await this._add(query);
+
+      if(services) {
+        let collection = await this.specialtyController.create(services, res.id);
+        res.services = collection;
+      }
     }
     
     //Update
@@ -67,8 +114,15 @@ module.exports = class SpecialistController extends Controller {
         }
       }
       else {
+        let query = req.body.specialist;
+        let services = query.services;
+        delete query['services'];
 
-        return await this._updateById(specialistId, req.body.specialist);
+        if(services) {
+          await this.specialtyController.deleteBySpecialistId(specialistId);
+          await this.specialtyController.create(services, specialistId);
+        }
+        return await this._updateById(specialistId, query);
       }
     }
   }
