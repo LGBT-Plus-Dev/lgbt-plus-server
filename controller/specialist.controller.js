@@ -103,6 +103,8 @@ module.exports = class SpecialistController extends Controller {
         let collection = await this.specialtyController.create(services, res.id);
         res.services = collection;
       }
+
+      return res;
     }
     
     //Update
