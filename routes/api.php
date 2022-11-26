@@ -66,6 +66,11 @@ Route::prefix('service')->group(function () {
 Route::prefix('booking')->group(function () {
     Route::get('/list', [BookingController::class, 'getList']);
     Route::get('/today', [BookingController::class, 'getTodaysBooking']);
+    Route::get('/today/specialist/{specialist}', [BookingController::class, 'getTodaysBookingBySpecialist']);
+    Route::get('/today/client/{client}', [BookingController::class, 'getTodaysBookingByClient']);
+    Route::get('/client/{client}', [BookingController::class, 'getClientBookings']);
+    Route::get('/specialist/{specialist}', [BookingController::class, 'getSpecialistBookings']);
+    Route::get('/declined/{specialist}', [BookingController::class, 'getDeclinedBookings']);
     Route::get('/{id}', [BookingController::class, 'getById']);
 
     Route::post('/', [BookingController::class, 'create']);
@@ -80,7 +85,6 @@ Route::prefix('barangay')->group(function () {
 
     Route::post('/', [BarangayController::class, 'create']);
 });
-
 
 
 Route::prefix('chat')->group(function () {

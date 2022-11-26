@@ -37,27 +37,88 @@ class BookingController extends Controller
           FROM bookings
           LEFT JOIN clients ON clients.id=bookings.client
           LEFT JOIN specialists ON specialists.id=bookings.specialist
-          WHERE bookings.date='$today'
+          WHERE bookings.date='$today' AND bookings.status <> 'cancelled' AND bookings.status <> 'no_specialist'
           ORDER BY start_time"
         );
+
+        
 
         return $results;
 
     }
 
-    public function getSpecialistBookings (Request $req)
+    public function getTodaysBookingBySpecialist ($specialist) 
     {
-        $bookings = Booking::where([
-            ['specialist', $req->specialist],
-            ['status', $req->status]
+        $today = date('Y-m-d');
+        
+        $results = Booking::where([
+            ['specialist', $specialist],
+            ['date', $today],
+            ['status', '<>', 'cancelled'],
+            ['status', '<>', 'no_specialist']
         ])->get();
+
+        foreach($results as $item)
+        {
+            $specialist = Specialist::where('id', $item->specialist)->first();
+            $client = Client::where('id', $item->client)->first();
+
+            $item->specialist = $specialist;
+            $item->client = $client;
+        }
+
+        return $results;
 
     }
 
-    public function getSpecialistDeclinedBookings (Request $req)
+    public function getTodaysBookingByClient ($client) 
+    {
+        $today = date('Y-m-d');
+        
+        $results = Booking::where([
+            ['client', $client],
+            ['date', $today],
+            ['status', '<>', 'cancelled'],
+            ['status', '<>', 'no_specialist']
+        ])->get();
+
+        foreach($results as $item)
+        {
+            $specialist = Specialist::where('id', $item->specialist)->first();
+            $client = Client::where('id', $item->client)->first();
+
+            $item->specialist = $specialist;
+            $item->client = $client;
+        }
+
+        return $results;
+
+    }
+
+
+    public function getSpecialistBookings ($specialist)
+    {
+        $results = Booking::where([
+            ['specialist', $specialist]
+        ])->get();
+        
+        foreach($results as $item)
+        {
+            $specialist = Specialist::where('id', $item->specialist)->first();
+            $client = Client::where('id', $item->client)->first();
+
+            $item->specialist = $specialist;
+            $item->client = $client;
+        }
+
+        return $results;
+
+    }
+
+    public function getDeclinedBookings ($specialist)
     {
         $results = SpecialistBooking::where([
-            ['specialist', $req->specialist],
+            ['specialist', $specialist],
             ['status', 'declined']
         ])->get();
 
@@ -69,6 +130,24 @@ class BookingController extends Controller
 
         return $results;
 
+    }
+
+    public function getClientBookings ($client)
+    {
+        $results = Booking::where([
+            ['client', $client]
+        ])->get();
+
+        foreach($results as $item)
+        {
+            $specialist = Specialist::where('id', $item->specialist)->first();
+            $client = Client::where('id', $item->client)->first();
+
+            $item->specialist = $specialist;
+            $item->client = $client;
+        }
+
+        return $results;
     }
 
     public function acceptBooking (Request $req)
