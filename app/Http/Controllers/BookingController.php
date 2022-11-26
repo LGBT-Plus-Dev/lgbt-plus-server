@@ -211,10 +211,23 @@ class BookingController extends Controller
         return $item;
     }
 
-    public function sendPayment (Request $req)
+    public function addPayment (Request $req)
     {
         $item = Booking::where('id', $req->booking);
         $payment = new Payment($req->payment);
+
+        if($req->hasFile('image')) {
+            $original_filename = $req->file('image')->getClientOriginalName();
+            $original_filename_arr = explode('.', $original_filename);
+            $file_ext = end($original_filename_arr);
+            $destination_path = 'storage/images/booking/payment/'.$item->id.'_'.$payment->id.'/';
+            $image = $item->id . '.' . $file_ext;
+
+            if ($req->file('image')->move($destination_path, $image)) {
+                $item->image = $destination_path.$image;
+            } 
+        }
+
         $payment->save();
 
         $client = Client::where('id', $item->client)->first();
@@ -225,8 +238,8 @@ class BookingController extends Controller
             $specialist,
             $client,
             "payment", 
-            "specialist")
-        );
+            "specialist"
+        ));
     }
 
     private function getPayments ($booking) {
