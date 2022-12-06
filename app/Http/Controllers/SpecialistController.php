@@ -28,6 +28,22 @@ class SpecialistController extends Controller
         return $item;
     }
 
+    public function getSpecialistAttendanceToday ($specialist)
+    {
+        $currentDate = date("Y-m-d");
+        $item = SpecialistLog::select(
+            DB::raw('specialists.*, specialist_logs.quota, specialist_logs.time_in')
+        )
+        ->join('specialists','specialists.id','specialist_logs.specialist')
+        ->where([
+            ['specialists.id', $specialist],
+            ['specialist_logs.date', $currentDate]
+        ])
+        ->first();
+
+        return $item;
+    }
+
     public function getSpecialistByService($serviceId)
     {
         $results = Specialist::select(
@@ -59,6 +75,7 @@ class SpecialistController extends Controller
 
     public function getSpecialistFifo($category)
     {
+        $currentDate = date("Y-m-d");
         $specialists = SpecialistLog::select(
             DB::raw('specialists.*, specialist_logs.quota, specialist_logs.time_in')
         )
@@ -66,7 +83,8 @@ class SpecialistController extends Controller
         ->where([
             ['specialists.status', 1],
             ['specialists.category', $category],
-            ['specialist_logs.time_out', null]
+            ['specialist_logs.time_out', null],
+            ['specialist_logs.date', $currentDate]
         ])
         ->orderBy('specialist_logs.quota')
         ->orderBy('specialist_logs.time_in')

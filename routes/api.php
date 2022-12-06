@@ -46,6 +46,7 @@ Route::prefix('specialist')->group(function () {
     // Route::get('/service/{id}', [SpecialistController::class, 'getSpecialistByService']);
     Route::get('/fifo/{category}', [SpecialistController::class, 'getSpecialistFifo']);
     Route::get('/attendance/{date}', [SpecialistController::class, 'getAttendance']);
+    Route::get('/attendance/today/{specialist}', [SpecialistController::class, 'getSpecialistAttendanceToday']);
     
     Route::post('authenticate', [SpecialistController::class, 'authenticate']);
     Route::post('/', [SpecialistController::class, 'create']);
