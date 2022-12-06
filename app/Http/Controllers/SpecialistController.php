@@ -44,8 +44,16 @@ class SpecialistController extends Controller
         return $item;
     }
 
-    public function timeIn (Request $req) {
-        $log = new SpecialistLog($req->log);
+    public function timeIn ($specialist) {
+        
+        $currentDate = date("Y-m-d");
+        $currentTime = date("H:i:s");
+
+        $log = new SpecialistLog();
+        $log->specialist = $specialist;
+        $log->date = $currentDate;
+        $log->time_in = $currentTime;
+        $log->quota = 0;
 
         if($log->save()) {
             return $log;
@@ -55,10 +63,19 @@ class SpecialistController extends Controller
         }
     }
 
-    public function timeOut (Request $req, $id) {
-        $log = SpecialistLog::where('id', $id)->first();
+    public function timeOut ($specialist) {
+        $currentDate = date("Y-m-d");
+        $currentTime = date("H:i:s");
 
-        if($log->update($req->log)) {
+        $log = SpecialistLog::where([
+            ['date', $currentDate],
+            ['specialist', $specialist]
+        ])
+        ->first();
+
+        if($log->update([
+            'time_out' => $currentTime
+        ])) {
             return $log;
         }
         else {
