@@ -30,10 +30,22 @@ Route::prefix('admin')->group(function () {
     Route::post('authenticate', [UserController::class, 'authenticate']);
 });
 
+Route::prefix('barangay')->group(function () {
+    Route::get('/list', [BarangayController::class, 'getList']);
+    Route::get('/{id}', [BarangayController::class, 'getById']);
+
+    Route::post('/', [BarangayController::class, 'create']);
+    Route::post('/{id}', [BarangayController::class, 'update']);
+
+    Route::delete('/{id}', [BarangayController::class, 'delete']);
+});
+
 Route::prefix('specialist')->group(function () {
     Route::get('/list', [SpecialistController::class, 'getList']);
     Route::get('/{id}', [SpecialistController::class, 'getById']);
-    Route::get('/service/{id}', [SpecialistController::class, 'getSpecialistByService']);
+    // Route::get('/service/{id}', [SpecialistController::class, 'getSpecialistByService']);
+    Route::get('/fifo/{category}', [SpecialistController::class, 'getSpecialistFifo']);
+    Route::get('/attendance/{date}', [SpecialistController::class, 'getAttendance']);
     
     Route::post('authenticate', [SpecialistController::class, 'authenticate']);
     Route::post('/', [SpecialistController::class, 'create']);
@@ -76,14 +88,9 @@ Route::prefix('booking')->group(function () {
     Route::post('/', [BookingController::class, 'create']);
     Route::post('/accept', [BookingController::class, 'acceptBooking']);
     Route::post('/decline', [BookingController::class, 'declineBooking']);
-});
-
-
-Route::prefix('barangay')->group(function () {
-    Route::get('/list', [BarangayController::class, 'getList']);
-    Route::get('/{id}', [BarangayController::class, 'getById']);
-
-    Route::post('/', [BarangayController::class, 'create']);
+    Route::post('/payment', [BookingController::class, 'addPayment']);
+    Route::get('/payment/confirm/{booking}', [BookingController::class, 'confirmPayment']);
+    Route::get('/complete/{booking}', [BookingController::class, 'completeBooking']);
 });
 
 

@@ -14,6 +14,8 @@ class Specialist extends Model
         'password',
         'fname',
         'lname',
+        'zone',
+        'category',
         'email',
         'mobile_no',
         'address',

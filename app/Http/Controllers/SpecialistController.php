@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Specialist;
+use App\Models\SpecialistLog;
 use App\Models\SpecialistService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +14,8 @@ class SpecialistController extends Controller
     {
         $results = Specialist::where('status', 1)->get();
 
-        foreach($results as $item)
-            $item->services = $this->getSpecialistServices($item->id);
+        // foreach($results as $item)
+        //     $item->services = $this->getSpecialistServices($item->id);
 
         return $results;
     }
@@ -22,8 +23,8 @@ class SpecialistController extends Controller
     public function getById($id)
     {
         $item = Specialist::where('id', $id)->first();
-        if($item)
-            $item->services = $this->getSpecialistServices($id);
+        // if($item)
+        //     $item->services = $this->getSpecialistServices($id);
         return $item;
     }
 
@@ -56,6 +57,39 @@ class SpecialistController extends Controller
         }
     }
 
+    public function getSpecialistFifo($category)
+    {
+        $specialists = SpecialistLog::select(
+            DB::raw('specialists.*, specialist_logs.quota, specialist_logs.time_in')
+        )
+        ->join('specialists','specialists.id','specialist_logs.specialist')
+        ->where([
+            ['specialists.status', 1],
+            ['specialists.category', $category],
+            ['specialist_logs.time_out', null]
+        ])
+        ->orderBy('specialist_logs.quota')
+        ->orderBy('specialist_logs.time_in')
+        ->get();
+
+        return $specialists;
+    }
+    
+    public function getAttendance ($date)
+    {
+        $specialists = SpecialistLog::select(
+            DB::raw('specialists.*, specialist_logs.quota, specialist_logs.time_in, specialist_logs.time_out')
+        )
+        ->join('specialists','specialists.id','specialist_logs.specialist')
+        ->where([
+            ['specialist_logs.date', $date]
+        ])
+        ->orderBy('specialist_logs.time_in')
+        ->get();
+
+        return $specialists;
+    }
+
     public function authenticate(Request $req)
     {
         $user = Specialist::where([
@@ -68,15 +102,15 @@ class SpecialistController extends Controller
 
     public function create (Request $req)
     {
-        $services = $req->specialist['services'];
+        //$services = $req->specialist['services'];
         $specialist = $req->specialist;
-        array_pop($specialist);
+        //array_pop($specialist);
 
         $item = new Specialist($specialist);
 
         if($item->save())
         {
-            $this->createSpecialistServices($services, $item->id);
+            //$this->createSpecialistServices($services, $item->id);
             return $this->getById($item->id);
         }
         else
@@ -85,18 +119,18 @@ class SpecialistController extends Controller
 
     public function update (Request $req, $id)
     {
-        $services = $req->specialist['services'];
+        //$services = $req->specialist['services'];
         $specialist = $req->specialist;
-        array_pop($specialist);
+        //array_pop($specialist);
 
         $item = Specialist::where('id', $id)->first();
 
         if(!$item) return 0;
 
-        if($services) {
-            $this->deleteSpecialistServices($id);
-            $this->createSpecialistServices($services, $id);
-        }
+        // if($services) {
+        //     $this->deleteSpecialistServices($id);
+        //     $this->createSpecialistServices($services, $id);
+        // }
 
         if($item->update($specialist))
             return $this->getById($item->id);
@@ -122,7 +156,7 @@ class SpecialistController extends Controller
 
     public function delete ($id)
     {
-        $this->deleteSpecialistServices($id);
+        //$this->deleteSpecialistServices($id);
         
         try {
             return Specialist::where('id', $id)->delete();

@@ -16,6 +16,7 @@ class Booking extends Model
         'service_name',
         'category',
         'price',
+        'zone',
         'date',
         'start_time',
         'end_time',

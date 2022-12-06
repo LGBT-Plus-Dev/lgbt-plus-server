@@ -16,6 +16,7 @@ class Client extends Model
         'lname',
         'mobile_no',
         'barangay',
+        'zone',
         'address',
         'image_uri',
         'status'

@@ -8,20 +8,41 @@ use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Specialist;
 use App\Models\SpecialistBooking;
+use App\Models\SpecialistLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
     public function getList()
     {
-        $results = Booking::where('status', 1)->get();
+        $results = Booking::get();
+        foreach($results as $item) {
+            $specialist = Specialist::where('id', $item->specialist)->first();
+            $client = Client::where('id', $item->client)->first();
+            $payments = Payment::where('booking', $item->id)->get();
+
+            $item->specialist = $specialist;
+            $item->client = $client;
+            $item->payments = $payments;
+        }
         return $results;
     }
 
-    public function getById () 
+    public function getById ($id) 
     {
+        $item = Booking::where('id', $id)->first();
 
+        $specialist = Specialist::where('id', $item->specialist)->first();
+        $client = Client::where('id', $item->client)->first();
+        $payments = Payment::where('booking', $item->id)->get();
+
+        $item->specialist = $specialist;
+        $item->client = $client;
+        $item->payments = $payments;
+
+        return $item;
     }
     
     public function getTodaysBooking () 
@@ -62,9 +83,11 @@ class BookingController extends Controller
         {
             $specialist = Specialist::where('id', $item->specialist)->first();
             $client = Client::where('id', $item->client)->first();
+            $payments = Payment::where('booking', $item->id)->get();
 
             $item->specialist = $specialist;
             $item->client = $client;
+            $item->payments = $payments;
         }
 
         return $results;
@@ -86,9 +109,11 @@ class BookingController extends Controller
         {
             $specialist = Specialist::where('id', $item->specialist)->first();
             $client = Client::where('id', $item->client)->first();
+            $payments = Payment::where('booking', $item->id)->get();
 
             $item->specialist = $specialist;
             $item->client = $client;
+            $item->payments = $payments;
         }
 
         return $results;
@@ -106,9 +131,11 @@ class BookingController extends Controller
         {
             $specialist = Specialist::where('id', $item->specialist)->first();
             $client = Client::where('id', $item->client)->first();
+            $payments = Payment::where('booking', $item->id)->get();
 
             $item->specialist = $specialist;
             $item->client = $client;
+            $item->payments = $payments;
         }
 
         return $results;
@@ -142,9 +169,11 @@ class BookingController extends Controller
         {
             $specialist = Specialist::where('id', $item->specialist)->first();
             $client = Client::where('id', $item->client)->first();
+            $payments = Payment::where('booking', $item->id)->get();
 
             $item->specialist = $specialist;
             $item->client = $client;
+            $item->payments = $payments;
         }
 
         return $results;
@@ -216,8 +245,6 @@ class BookingController extends Controller
             $pending->status = "pending";
             $pending->save();
 
-            // $client = Client::where('id', $item->client)->first();
-
             event(new BookingEvent(
                 $item, 
                 $specialist['selected'],
@@ -249,8 +276,14 @@ class BookingController extends Controller
     public function create (Request $req) 
     {
         $booking = $req->booking;
+        if($booking['type'] != "event") {
+            $booking['date'] = date('y-m-d');
+        }
         $item = new Booking($booking);
         $item->save();
+
+        
+        Log::channel('booking')->info("Booking@create", [$item]);
         
         $specialist = $this->searchSpecialist($item);
         
@@ -269,7 +302,7 @@ class BookingController extends Controller
             $pending->save();
 
             $client = Client::where('id', $item->client)->first();
-
+            
             event(new BookingEvent(
                 $item, 
                 $specialist['selected'],
@@ -292,33 +325,69 @@ class BookingController extends Controller
 
     public function addPayment (Request $req)
     {
-        $item = Booking::where('id', $req->booking);
-        $payment = new Payment($req->payment);
+        
+        $payment = json_decode($req->payment);
+        $item = new Payment();
+        $item->amount = $payment->amount;
+        $item->client = $payment->client;
+        $item->specialist = $payment->specialist;
+        $item->booking = $payment->booking;
+        $item->save();
+
+        $booking = Booking::where('id', $payment->booking)->first();
 
         if($req->hasFile('image')) {
             $original_filename = $req->file('image')->getClientOriginalName();
             $original_filename_arr = explode('.', $original_filename);
             $file_ext = end($original_filename_arr);
-            $destination_path = 'storage/images/booking/payment/'.$item->id.'_'.$payment->id.'/';
-            $image = $item->id . '.' . $file_ext;
+            $destination_path = 'storage/images/booking/payment/'.$booking->id.'/';
+            $image = $booking->id . '_' . $item->id .'.' . $file_ext;
 
             if ($req->file('image')->move($destination_path, $image)) {
-                $item->image = $destination_path.$image;
+                $image_uri = $destination_path.$image;
+                $item->update([
+                    'image_uri' => $image_uri
+                ]);
             } 
         }
+        $booking->update([
+            'status' => 'for_payment_confirmation'
+        ]);
 
-        $payment->save();
-
-        $client = Client::where('id', $item->client)->first();
-        $specialist = Specialist::where('id', $item->specialist)->first();
+        $client = Client::where('id', $booking->client)->first();
+        $specialist = Specialist::where('id', $booking->specialist)->first();
 
         event(new BookingEvent(
-            $item, 
+            $booking, 
             $specialist,
             $client,
             "payment", 
             "specialist"
         ));
+
+        return $item;
+    }
+
+    public function confirmPayment ($booking) {
+
+        $item = Booking::where('id', $booking)->first();
+
+        $item->update([
+            'status' => 'payment_accepted'
+        ]);
+
+        return $item;
+    }
+
+    public function completeBooking ($booking) {
+        
+        $item = Booking::where('id', $booking)->first();
+
+        $item->update([
+            'status' => 'completed'
+        ]);
+
+        return $item;
     }
 
     private function getPayments ($booking) {
@@ -338,16 +407,21 @@ class BookingController extends Controller
         $startTime = $booking->start_time;
         $endTime = $booking->end_time;
         
-        
-        $specialists = Specialist::select(
-            DB::raw('specialists.*')
-        )->join('specialist_services','specialist_services.specialist','specialists.id')
+        $specialists = SpecialistLog::select(
+            DB::raw('specialists.*, specialist_logs.quota')
+        )
+        ->join('specialists','specialists.id','specialist_logs.specialist')
         ->where([
             ['specialists.status', 1],
-            ['specialist_services.service', $booking->service]
-        ])->get();
+            ['zone', $booking->zone],
+            ['specialists.category', $booking->category],
+            ['specialist_logs.time_out', null]
+        ])
+        ->orderBy('specialist_logs.quota')
+        ->orderBy('specialist_logs.time_in')
+        ->get();
 
-        //Check Specialist Bookings
+        // Check Specialist Bookings
         foreach($specialists as $specialist)
         {
             if($booking)
@@ -356,9 +430,12 @@ class BookingController extends Controller
                 if(!$history) continue;
             }
 
-            $res = Booking::where([
-                ['specialist', $specialist->id],
-                ['date', $booking->date],
+            $res = SpecialistBooking::select(
+                DB::raw('bookings.*')
+            )->join('bookings', 'bookings.id', 'specialist_bookings.booking')
+            ->where([
+                ['specialist_bookings.specialist', $specialist->id],
+                ['bookings.date', $booking->date],
             ])->get();
 
             if(count($res) === 0) {
@@ -376,7 +453,7 @@ class BookingController extends Controller
                         $endTime
                     );
                     
-                    if($lapsed) {
+                    if(!$lapsed) {
                         $noLapse = false;
                         break;
                     }
@@ -389,8 +466,9 @@ class BookingController extends Controller
             }  
         }
 
+        Log::channel('booking')->info("Booking@searchSpecialist", [$available]);
+
         if(count($available) > 0) {
-            // $result['selected'] = $this->getSpecialistByQuota($booking['date'], $available);
             $result['selected'] = $available[0];
         }
         else {
