@@ -51,8 +51,8 @@ Route::prefix('specialist')->group(function () {
     Route::post('authenticate', [SpecialistController::class, 'authenticate']);
     Route::post('/', [SpecialistController::class, 'create']);
     Route::post('/{id}', [SpecialistController::class, 'update']);
-    Route::post('/timeIn/{specialist}', [SpecialistController::class, 'timeIn']);
-    Route::post('/timeOut/{specialist}', [SpecialistController::class, 'timeOut']);
+    Route::post('/time_in/{specialist}', [SpecialistController::class, 'timeIn']);
+    Route::post('/time_out/{specialist}', [SpecialistController::class, 'timeOut']);
     
     Route::delete('/{id}', [SpecialistController::class, 'delete']);
 });
