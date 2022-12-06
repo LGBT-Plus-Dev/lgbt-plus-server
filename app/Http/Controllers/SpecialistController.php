@@ -44,6 +44,28 @@ class SpecialistController extends Controller
         return $item;
     }
 
+    public function timeIn (Request $req) {
+        $log = new SpecialistLog($req->log);
+
+        if($log->save()) {
+            return $log;
+        }
+        else {
+            return 0;
+        }
+    }
+
+    public function timeOut (Request $req, $id) {
+        $log = SpecialistLog::where('id', $id)->first();
+
+        if($log->update($req->log)) {
+            return $log;
+        }
+        else {
+            return 0;
+        }
+    }
+
     public function getSpecialistByService($serviceId)
     {
         $results = Specialist::select(
