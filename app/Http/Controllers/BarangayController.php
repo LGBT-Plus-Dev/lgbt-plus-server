@@ -42,4 +42,10 @@ class BarangayController extends Controller
         else
             return 0;
     }
+
+    public function delete ($id)
+    {
+        $item = Barangay::where('id', $id)->first();
+        return $item->delete();
+    }
 }
