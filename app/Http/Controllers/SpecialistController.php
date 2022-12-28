@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Specialist;
 use App\Models\SpecialistLog;
+use App\Models\SpecialistRating;
 use App\Models\SpecialistService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +15,17 @@ class SpecialistController extends Controller
     {
         $results = Specialist::where('status', 1)->get();
 
-        // foreach($results as $item)
-        //     $item->services = $this->getSpecialistServices($item->id);
+        foreach($results as $item) 
+        {
+            $ratings = SpecialistRating::select(
+                    DB::raw("AVG(ratings) as average, SUM(ratings) as total")
+                )
+                ->where('specialist', $item->id)
+                ->first();
+
+            $item->ratings_total = $ratings->total ? $ratings->total : 0;
+            $item->ratings_average = $ratings->average ? $ratings->average : 0;
+        }
 
         return $results;
     }
@@ -23,9 +33,32 @@ class SpecialistController extends Controller
     public function getById($id)
     {
         $item = Specialist::where('id', $id)->first();
-        // if($item)
-        //     $item->services = $this->getSpecialistServices($id);
+
+        $ratings = SpecialistRating::select(
+                DB::raw("AVG(ratings) as average, SUM(ratings) as total")
+            )
+            ->where('specialist', $item->id)
+            ->first();
+
+        $item->ratings_total = $ratings->total ? $ratings->total : 0;
+        $item->ratings_average = $ratings->average ? $ratings->average : 0;
+
         return $item;
+    }
+    
+    public function getAttendance ($date)
+    {
+        $specialists = SpecialistLog::select(
+            DB::raw('specialists.*, specialist_logs.quota, specialist_logs.time_in, specialist_logs.time_out')
+        )
+        ->join('specialists','specialists.id','specialist_logs.specialist')
+        ->where([
+            ['specialist_logs.date', $date]
+        ])
+        ->orderBy('specialist_logs.time_in')
+        ->get();
+
+        return $specialists;
     }
 
     public function getSpecialistAttendanceToday ($specialist)
@@ -44,7 +77,24 @@ class SpecialistController extends Controller
         return $item;
     }
 
-    public function timeIn ($specialist) {
+    public function getAttendanceFrom ($date)
+    {
+        $currentDate = date("Y-m-d");
+
+        $specialists = SpecialistLog::select(
+            DB::raw('specialists.*, specialist_logs.quota, specialist_logs.date, specialist_logs.time_in, specialist_logs.time_out')
+        )
+        ->join('specialists','specialists.id','specialist_logs.specialist')
+        ->whereBetween('specialist_logs.date', [$date, $currentDate])
+        ->orderBy('specialist_logs.date', 'DESC')
+        ->orderBy('specialist_logs.time_in')
+        ->get();
+
+        return $specialists;
+    }
+
+    public function timeIn ($specialist)
+    {
         
         $currentDate = date("Y-m-d");
         $currentTime = date("H:i:s");
@@ -63,7 +113,8 @@ class SpecialistController extends Controller
         }
     }
 
-    public function timeOut ($specialist) {
+    public function timeOut ($specialist) 
+    {
         $currentDate = date("Y-m-d");
         $currentTime = date("H:i:s");
 
@@ -80,35 +131,6 @@ class SpecialistController extends Controller
         }
         else {
             return 0;
-        }
-    }
-
-    public function getSpecialistByService($serviceId)
-    {
-        $results = Specialist::select(
-            DB::raw('specialists.*')
-        )
-        ->join('specialist_services', 'specialist_services.specialist', 'specialists.id')
-        -> where([
-            ['specialists.status', 1],
-            ['specialist_services.service', $serviceId]
-        ])->get();
-
-        return $results;
-    }
-
-    private function getSpecialistServices ($specialistId)
-    {
-        if($specialistId)
-        {
-            $services = SpecialistService::select(
-                DB::raw('specialist_services.*', 'services.name')
-            )
-            ->join('services','specialist_services.service', 'services.id')
-            ->where('specialist_services.specialist',$specialistId)
-            ->get();
-
-            return $services;
         }
     }
 
@@ -131,21 +153,6 @@ class SpecialistController extends Controller
 
         return $specialists;
     }
-    
-    public function getAttendance ($date)
-    {
-        $specialists = SpecialistLog::select(
-            DB::raw('specialists.*, specialist_logs.quota, specialist_logs.time_in, specialist_logs.time_out')
-        )
-        ->join('specialists','specialists.id','specialist_logs.specialist')
-        ->where([
-            ['specialist_logs.date', $date]
-        ])
-        ->orderBy('specialist_logs.time_in')
-        ->get();
-
-        return $specialists;
-    }
 
     public function authenticate(Request $req)
     {
@@ -159,35 +166,40 @@ class SpecialistController extends Controller
 
     public function create (Request $req)
     {
-        //$services = $req->specialist['services'];
         $specialist = $req->specialist;
-        //array_pop($specialist);
+        
+        $count = Specialist::where('category', $specialist['category'])->get()->count();
+        
+        if($count >= 10) {
+            return "Maximum count of specialist for the selected category has been reached!";
+        }
 
         $item = new Specialist($specialist);
 
         if($item->save())
         {
-            //$this->createSpecialistServices($services, $item->id);
             return $this->getById($item->id);
         }
         else
-            return 0;
+            return "Something went wrong!";
     }
 
     public function update (Request $req, $id)
     {
-        //$services = $req->specialist['services'];
         $specialist = $req->specialist;
-        //array_pop($specialist);
 
         $item = Specialist::where('id', $id)->first();
 
-        if(!$item) return 0;
+        if($item->category !== $specialist['category']) {
+            $count = Specialist::where('category', $specialist['category'])->get()->count();
+        
+            if($count >= 10) {
+                return "Maximum count of specialist for the selected category has been reached!";
+            }
+        }
 
-        // if($services) {
-        //     $this->deleteSpecialistServices($id);
-        //     $this->createSpecialistServices($services, $id);
-        // }
+
+        if(!$item) return 0;
 
         if($item->update($specialist))
             return $this->getById($item->id);
@@ -195,26 +207,8 @@ class SpecialistController extends Controller
             return 0;
     }
 
-    private function createSpecialistServices ($services, $specialist) 
-    {
-        foreach($services as $service)
-        {
-            $item = new SpecialistService();
-            $item->specialist = $specialist;
-            $item->service = $service;
-            $item->save();
-        }
-    }
-
-    private function deleteSpecialistServices ($specialist) 
-    {
-        SpecialistService::where('specialist',$specialist)->delete();
-    }
-
     public function delete ($id)
     {
-        //$this->deleteSpecialistServices($id);
-        
         try {
             return Specialist::where('id', $id)->delete();
         } catch (\Throwable $th) {

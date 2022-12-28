@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Specialist;
 use App\Models\SpecialistBooking;
 use App\Models\SpecialistLog;
+use App\Models\SpecialistRating;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -44,6 +45,22 @@ class BookingController extends Controller
 
         return $item;
     }
+
+    public function getGroupedBookings () {
+        $results = Booking::orderBy('start_time')->get();
+
+        foreach($results as $item) {
+            $specialist = Specialist::where('id', $item->specialist)->first();
+            $client = Client::where('id', $item->client)->first();
+            $payments = Payment::where('booking', $item->id)->get();
+
+            $item->specialist = $specialist;
+            $item->client = $client;
+            $item->payments = $payments;
+        }
+        
+        return $results->groupBy('date');
+    }
     
     public function getTodaysBooking () 
     {
@@ -61,8 +78,6 @@ class BookingController extends Controller
           WHERE bookings.date='$today' AND bookings.status <> 'cancelled' AND bookings.status <> 'no_specialist'
           ORDER BY start_time"
         );
-
-        
 
         return $results;
 
@@ -183,6 +198,8 @@ class BookingController extends Controller
     {
         $item = Booking::where('id', $req->booking)->first();
 
+        //TODO: Add quota when accepted
+
         $history = SpecialistBooking::where([
             ['booking', $req->booking],
             ['specialist', $req->specialist]
@@ -259,6 +276,7 @@ class BookingController extends Controller
                 'status' => 'no_specialist',
                 'specialist' => null
             ]);
+            
             $item->reason = $specialist['reason'];
 
             event(new BookingEvent(
@@ -276,50 +294,53 @@ class BookingController extends Controller
     public function create (Request $req) 
     {
         $booking = $req->booking;
-        if($booking['type'] != "event") {
-            $booking['date'] = date('y-m-d');
-        }
+
         $item = new Booking($booking);
         $item->save();
 
         
         Log::channel('booking')->info("Booking@create", [$item]);
+
+        if($booking['date'] === date('y-m-d')) {
+            $specialist = $this->searchSpecialist($item);
         
-        $specialist = $this->searchSpecialist($item);
+            if($specialist['selected'])
+            {
+                $item->specialist = $specialist['selected']->id;
+                $item->update([
+                    'status' => 'for_acceptance',
+                    'specialist' => $specialist['selected']->id
+                ]);
+
+                $pending = new SpecialistBooking();
+                $pending->specialist = $specialist['selected']->id;
+                $pending->booking = $item->id;
+                $pending->status = "pending";
+                $pending->save();
+
+                $client = Client::where('id', $item->client)->first();
+                
+                event(new BookingEvent(
+                    $item, 
+                    $specialist['selected'],
+                    $client,
+                    "new", 
+                    "specialist")
+                );
+            }
+            else
+            {
+                $item->update([
+                    'status' => 'no_specialist',
+                    'specialist' => null
+                ]);
+                $item->reason = $specialist['reason'];
+            }
+        }
+        else {
+            $item->reason = "other date";
+        }
         
-        if($specialist['selected'])
-        {
-            $item->specialist = $specialist['selected']->id;
-            $item->update([
-                'status' => 'for_acceptance',
-                'specialist' => $specialist['selected']->id
-            ]);
-
-            $pending = new SpecialistBooking();
-            $pending->specialist = $specialist['selected']->id;
-            $pending->booking = $item->id;
-            $pending->status = "pending";
-            $pending->save();
-
-            $client = Client::where('id', $item->client)->first();
-            
-            event(new BookingEvent(
-                $item, 
-                $specialist['selected'],
-                $client,
-                "new", 
-                "specialist")
-            );
-        }
-        else
-        {
-            $item->update([
-                'status' => 'no_specialist',
-                'specialist' => null
-            ]);
-            $item->reason = $specialist['reason'];
-        }
-
         return $item;
     }
 
@@ -379,10 +400,15 @@ class BookingController extends Controller
         return $item;
     }
 
-    public function completeBooking ($booking) {
-        
-        $item = Booking::where('id', $booking)->first();
+    public function completeBooking (Request $req) {
 
+        $rating = $req->rating;
+
+        $specialistRating = new SpecialistRating($rating);
+        $specialistRating->save();
+        
+        $item = Booking::where('id', $specialistRating->booking)->first();
+        
         $item->update([
             'status' => 'completed'
         ]);

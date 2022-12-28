@@ -16,7 +16,6 @@ class Specialist extends Model
         'lname',
         'zone',
         'category',
-        'email',
         'mobile_no',
         'address',
         'image_uri',

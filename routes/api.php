@@ -7,7 +7,6 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SpecialistController;
 use App\Http\Controllers\UserController;
-use App\Models\Specialist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +46,7 @@ Route::prefix('specialist')->group(function () {
     Route::get('/fifo/{category}', [SpecialistController::class, 'getSpecialistFifo']);
     Route::get('/attendance/{date}', [SpecialistController::class, 'getAttendance']);
     Route::get('/attendance/today/{specialist}', [SpecialistController::class, 'getSpecialistAttendanceToday']);
+    Route::get('/attendance/from/{date}', [SpecialistController::class, 'getAttendanceFrom']);
     
     Route::post('authenticate', [SpecialistController::class, 'authenticate']);
     Route::post('/', [SpecialistController::class, 'create']);
@@ -81,6 +81,7 @@ Route::prefix('service')->group(function () {
 
 Route::prefix('booking')->group(function () {
     Route::get('/list', [BookingController::class, 'getList']);
+    Route::get('/list/grouped', [BookingController::class, 'getGroupedBookings']);
     Route::get('/today', [BookingController::class, 'getTodaysBooking']);
     Route::get('/today/specialist/{specialist}', [BookingController::class, 'getTodaysBookingBySpecialist']);
     Route::get('/today/client/{client}', [BookingController::class, 'getTodaysBookingByClient']);
@@ -88,13 +89,13 @@ Route::prefix('booking')->group(function () {
     Route::get('/specialist/{specialist}', [BookingController::class, 'getSpecialistBookings']);
     Route::get('/declined/{specialist}', [BookingController::class, 'getDeclinedBookings']);
     Route::get('/{id}', [BookingController::class, 'getById']);
+    Route::get('/payment/confirm/{booking}', [BookingController::class, 'confirmPayment']);
 
     Route::post('/', [BookingController::class, 'create']);
     Route::post('/accept', [BookingController::class, 'acceptBooking']);
     Route::post('/decline', [BookingController::class, 'declineBooking']);
     Route::post('/payment', [BookingController::class, 'addPayment']);
-    Route::get('/payment/confirm/{booking}', [BookingController::class, 'confirmPayment']);
-    Route::get('/complete/{booking}', [BookingController::class, 'completeBooking']);
+    Route::post('/complete', [BookingController::class, 'completeBooking']);
 });
 
 

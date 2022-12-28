@@ -23,7 +23,7 @@ class ClientController extends Controller
     public function authenticate(Request $req)
     {
         $user = Client::where([
-            ['email',$req->email],
+            ['username',$req->username],
             ['password', $req->password]
         ])->first();
 
