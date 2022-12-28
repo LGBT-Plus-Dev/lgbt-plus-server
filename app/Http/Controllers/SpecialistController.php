@@ -217,4 +217,45 @@ class SpecialistController extends Controller
             ]);
         }
     }
+
+    public function updateImage (Request $req)
+    {
+        $item = Specialist::where('id', $req->id)->first();
+
+        $image_result = false;
+        
+        $result = false;
+
+        if($req->hasFile('image')) {
+
+            $path = 'storage/images/specialist/'.$item->id;
+
+            if(file_exists($path)) {
+                array_map('unlink', glob("$path/*.*"));
+            }
+
+            $original_filename = $req->file('image')->getClientOriginalName();
+            $original_filename_arr = explode('.', $original_filename);
+            $file_ext = end($original_filename_arr);
+            $destination_path = 'storage/images/specialist/'.$item->id.'/';
+            $image = 'profile.' . $file_ext;
+
+            if ($req->file('image')->move($destination_path, $image)) {
+                $image_result = $destination_path.$image;
+                $result = $item->update([
+                    "image_uri" => $image_result
+                ]);
+            }
+        }
+        else {
+            return "No Image";
+        }
+
+        if($result) {
+            return $item;
+        }
+        else {
+            return "Failed";
+        }
+    }
 }

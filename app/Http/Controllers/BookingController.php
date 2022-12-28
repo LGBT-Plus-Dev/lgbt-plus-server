@@ -6,6 +6,7 @@ use App\Events\BookingEvent;
 use App\Models\Booking;
 use App\Models\Client;
 use App\Models\Payment;
+use App\Models\Setting;
 use App\Models\Specialist;
 use App\Models\SpecialistBooking;
 use App\Models\SpecialistLog;
@@ -137,7 +138,7 @@ class BookingController extends Controller
 
 
     public function getSpecialistBookings ($specialist)
-    {
+    {   
         $results = Booking::where([
             ['specialist', $specialist]
         ])->get();
@@ -216,13 +217,16 @@ class BookingController extends Controller
         $specialist = Specialist::where('id', $item->specialist)->first();
         $client = Client::where('id', $item->client)->first();
 
-        event(new BookingEvent(
-            $item, 
-            $specialist,
-            $client,
-            "accepted", 
-            "client")
-        );
+        try {
+            event(new BookingEvent(
+                $item, 
+                $specialist,
+                $client,
+                "accepted", 
+                "client")
+            );
+        }
+        catch(\Throwable $e) {}
 
         return $item;
     }
@@ -262,13 +266,17 @@ class BookingController extends Controller
             $pending->status = "pending";
             $pending->save();
 
-            event(new BookingEvent(
-                $item, 
-                $specialist['selected'],
-                $client,
-                "new", 
-                "specialist"
-            ));
+            try {
+                event(new BookingEvent(
+                    $item, 
+                    $specialist['selected'],
+                    $client,
+                    "new", 
+                    "specialist"
+                ));
+            } catch (\Throwable $th) {
+                //throw $th;
+            }
         }
         else
         {
@@ -279,13 +287,17 @@ class BookingController extends Controller
             
             $item->reason = $specialist['reason'];
 
-            event(new BookingEvent(
-                $item, 
-                $specialist,
-                $client,
-                "no_specialist",
-                "client")
-            );
+            try {
+                event(new BookingEvent(
+                    $item, 
+                    $specialist,
+                    $client,
+                    "no_specialist",
+                    "client")
+                );
+            } catch (\Throwable $th) {
+                //throw $th;
+            }
         }
 
         return $item;
@@ -293,7 +305,25 @@ class BookingController extends Controller
 
     public function create (Request $req) 
     {
+
+        $current_time = time();
+        $startVal = Setting::where('name', 'service_start_time')->first()->value;
+        $endVal = Setting::where('name', 'service_end_time')->first()->value;
+        $start = strtotime($startVal);
+        $end = strtotime($endVal);
+
+        if(!($current_time >= $start && $current_time <= $end)) {
+            return "Service Time is between ".$startVal." - ".$endVal;
+        }
+
         $booking = $req->booking;
+        
+        $serviceStart = strtotime($booking['start_time']);
+        $serviceEnd = strtotime($booking['end_time']);
+
+        if(!($serviceStart >= $start && $serviceStart <= $end) || !($serviceEnd >= $start && $serviceEnd <= $end)) {
+            return "Service Time is between ".$startVal." - ".$endVal;
+        }
 
         $item = new Booking($booking);
         $item->save();
@@ -320,13 +350,17 @@ class BookingController extends Controller
 
                 $client = Client::where('id', $item->client)->first();
                 
-                event(new BookingEvent(
-                    $item, 
-                    $specialist['selected'],
-                    $client,
-                    "new", 
-                    "specialist")
-                );
+                try {
+                    event(new BookingEvent(
+                        $item, 
+                        $specialist['selected'],
+                        $client,
+                        "new", 
+                        "specialist")
+                    );
+                } catch (\Throwable $th) {
+                    //throw $th;
+                }
             }
             else
             {
@@ -378,13 +412,16 @@ class BookingController extends Controller
         $client = Client::where('id', $booking->client)->first();
         $specialist = Specialist::where('id', $booking->specialist)->first();
 
-        event(new BookingEvent(
-            $booking, 
-            $specialist,
-            $client,
-            "payment", 
-            "specialist"
-        ));
+        try {
+            event(new BookingEvent(
+                $booking, 
+                $specialist,
+                $client,
+                "payment", 
+                "specialist"
+            ));
+        }
+        catch(\Throwable $e) {}
 
         return $item;
     }

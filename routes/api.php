@@ -50,6 +50,7 @@ Route::prefix('specialist')->group(function () {
     
     Route::post('authenticate', [SpecialistController::class, 'authenticate']);
     Route::post('/', [SpecialistController::class, 'create']);
+    Route::post('/update_image', [SpecialistController::class, 'updateImage']);
     Route::post('/{id}', [SpecialistController::class, 'update']);
     
     Route::get('/time_in/{specialist}', [SpecialistController::class, 'timeIn']);
@@ -64,6 +65,7 @@ Route::prefix('client')->group(function () {
     
     Route::post('authenticate', [ClientController::class, 'authenticate']);
     Route::post('/', [ClientController::class, 'create']);
+    Route::post('/update_image', [ClientController::class, 'updateImage']);
     Route::post('/{id}', [ClientController::class, 'update']);
     
     Route::delete('/{id}', [ClientController::class, 'delete']);
@@ -88,8 +90,8 @@ Route::prefix('booking')->group(function () {
     Route::get('/client/{client}', [BookingController::class, 'getClientBookings']);
     Route::get('/specialist/{specialist}', [BookingController::class, 'getSpecialistBookings']);
     Route::get('/declined/{specialist}', [BookingController::class, 'getDeclinedBookings']);
-    Route::get('/{id}', [BookingController::class, 'getById']);
     Route::get('/payment/confirm/{booking}', [BookingController::class, 'confirmPayment']);
+    Route::get('/{id}', [BookingController::class, 'getById']);
 
     Route::post('/', [BookingController::class, 'create']);
     Route::post('/accept', [BookingController::class, 'acceptBooking']);
